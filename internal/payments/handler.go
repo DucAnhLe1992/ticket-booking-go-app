@@ -14,9 +14,9 @@ type HTTPHandler struct {
 func NewHTTPHandler(svc *Service) *HTTPHandler { return &HTTPHandler{svc: svc} }
 
 type CreateChargeRequest struct {
-	OrderID      string `json:"order_id"`
-	Amount       int64  `json:"amount"`
-	Currency     string `json:"currency"`
+	OrderID       string `json:"order_id"`
+	Amount        int64  `json:"amount"`
+	Currency      string `json:"currency"`
 	PaymentMethod string `json:"payment_method"`
 }
 
@@ -37,8 +37,19 @@ func (h *HTTPHandler) CreateCharge(w http.ResponseWriter, r *http.Request) {
 
 // Webhook reads raw body and forwards to service for verification/processing.
 func (h *HTTPHandler) Webhook(w http.ResponseWriter, r *http.Request) {
-	body, _ := io.ReadAll(r.Body)
-	// In real impl: verify signature header and call ProcessWebhook
-	_ = h.svc.ProcessWebhook(r.Context(), body)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "failed to read body", http.StatusBadRequest)
+		return
+	}
+
+	// Get Stripe signature header
+	sigHeader := r.Header.Get("Stripe-Signature")
+
+	if err := h.svc.ProcessWebhook(r.Context(), body, sigHeader); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }

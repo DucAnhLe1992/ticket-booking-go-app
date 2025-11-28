@@ -1,55 +1,47 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: payments
+  name: orders
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: payments
+      app: orders
   template:
     metadata:
       labels:
-        app: payments
+        app: orders
     spec:
       containers:
-      - name: payments
-        image: ghcr.io/ducanhle1992/ticket-payments:dev
+      - name: orders
+        image: ghcr.io/ducanhle1992/ticket-orders:dev
         imagePullPolicy: IfNotPresent
         env:
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: payments-secrets
+              name: orders-secrets
               key: database-url
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
-              name: payments-secrets
+              name: orders-secrets
               key: jwt-secret
         - name: NATS_URL
           value: "nats://nats:4222"
-        - name: STRIPE_KEY
-          valueFrom:
-            secretKeyRef:
-              name: payments-secrets
-              key: stripe-key
-        - name: STRIPE_WEBHOOK_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: payments-secrets
-              key: stripe-webhook-secret
+        - name: EXPIRATION_WINDOW_SECONDS
+          value: "900"  # 15 minutes
         ports:
         - containerPort: 3000
         livenessProbe:
           httpGet:
-            path: /api/payments/health
+            path: /api/orders
             port: 3000
           initialDelaySeconds: 10
           periodSeconds: 10
         readinessProbe:
           httpGet:
-            path: /api/payments/health
+            path: /api/orders
             port: 3000
           initialDelaySeconds: 5
           periodSeconds: 5
@@ -64,10 +56,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: payments
+  name: orders
 spec:
   selector:
-    app: payments
+    app: orders
   ports:
   - protocol: TCP
     port: 3000
@@ -76,10 +68,8 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: payments-secrets
+  name: orders-secrets
 type: Opaque
 stringData:
-  database-url: "postgres://postgres:password@postgres:5432/payments?sslmode=disable"
+  database-url: "postgres://postgres:password@postgres:5432/orders?sslmode=disable"
   jwt-secret: "your-jwt-secret-change-in-production"
-  stripe-key: "sk_test_your_stripe_key_here"
-  stripe-webhook-secret: "whsec_your_webhook_secret_here"

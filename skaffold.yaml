@@ -1,0 +1,63 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: ticket-booking-go
+
+build:
+  artifacts:
+  - image: ghcr.io/ducanhle1992/ticket-auth
+    context: .
+    docker:
+      dockerfile: cmd/auth/Dockerfile
+  - image: ghcr.io/ducanhle1992/ticket-tickets
+    context: .
+    docker:
+      dockerfile: cmd/tickets/Dockerfile
+  - image: ghcr.io/ducanhle1992/ticket-orders
+    context: .
+    docker:
+      dockerfile: cmd/orders/Dockerfile
+  - image: ghcr.io/ducanhle1992/ticket-payments
+    context: .
+    docker:
+      dockerfile: cmd/payments/Dockerfile
+  - image: ghcr.io/ducanhle1992/ticket-expiration
+    context: .
+    docker:
+      dockerfile: cmd/expiration/Dockerfile
+  local:
+    push: false
+
+deploy:
+  kubectl:
+    manifests:
+    - infra/k8s/postgres-deployment.yaml
+    - infra/k8s/nats-deployment.yaml
+    - infra/k8s/redis-deployment.yaml
+    - infra/k8s/auth-deployment.yaml
+    - infra/k8s/tickets-deployment.yaml
+    - infra/k8s/orders-deployment.yaml
+    - infra/k8s/payments-deployment.yaml
+    - infra/k8s/expiration-deployment.yaml
+
+portForward:
+- resourceType: service
+  resourceName: auth
+  port: 3000
+  localPort: 3001
+- resourceType: service
+  resourceName: tickets
+  port: 3000
+  localPort: 3002
+- resourceType: service
+  resourceName: orders
+  port: 3000
+  localPort: 3003
+- resourceType: service
+  resourceName: payments
+  port: 3000
+  localPort: 3004
+- resourceType: service
+  resourceName: nats
+  port: 8222
+  localPort: 8222

@@ -1,30 +1,31 @@
--- Create payments table
+-- Payments Service: Create payments and replicated orders tables
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-CREATE TABLE IF NOT EXISTS payments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID NOT NULL,
-  customer_id UUID,
-  stripe_id TEXT,
-  amount BIGINT NOT NULL,
-  currency TEXT NOT NULL DEFAULT 'usd',
-  status TEXT NOT NULL,
-  metadata JSONB,
+-- Replicated orders table for payments service
+CREATE TABLE IF NOT EXISTS orders (
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL,
+  ticket_id UUID NOT NULL,
+  status TEXT NOT NULL DEFAULT 'created',
+  price BIGINT NOT NULL,
+  version INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS webhook_events (
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+
+-- Payments table
+CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  provider TEXT NOT NULL,
-  event_id TEXT NOT NULL,
-  payload JSONB NOT NULL,
-  processed BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT now()
+  order_id UUID NOT NULL REFERENCES orders(id),
+  stripe_id TEXT UNIQUE,
+  amount BIGINT NOT NULL CHECK (amount >= 0),
+  currency TEXT NOT NULL DEFAULT 'usd',
+  status TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS idempotency_keys (
-  key TEXT PRIMARY KEY,
-  response JSONB,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
+CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id);
+CREATE INDEX IF NOT EXISTS idx_payments_stripe_id ON payments(stripe_id) WHERE stripe_id IS NOT NULL;

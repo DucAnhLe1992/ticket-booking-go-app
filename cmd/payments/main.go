@@ -30,13 +30,33 @@ func main() {
 	if err != nil {
 		log.Fatalf("store.NewPostgres: %v", err)
 	}
-	// Initialize pubsub (currently a stub)
-	pub := pubsub.NewNoopPublisher()
+	// Initialize pubsub (use NATS if configured; otherwise noop for local dev)
+	var pub pubsub.Publisher
+	var sub pubsub.Subscriber
+	if natsURL != "" {
+		if n, err := pubsub.NewNATS(natsURL); err == nil {
+			pub = n
+			sub = n
+			defer n.Close()
+		} else {
+			log.Printf("warn: NATS connect failed (%v), using noop pubsub", err)
+			pub = pubsub.NewNoopPublisher()
+		}
+	} else {
+		pub = pubsub.NewNoopPublisher()
+	}
 
-	// Initialize stripe client stub
+	// Initialize stripe client with webhook secret
 	sc := payments.NewStripeClient(stripeKey)
+	if webhookSecret := os.Getenv("STRIPE_WEBHOOK_SECRET"); webhookSecret != "" {
+		sc.SetWebhookSecret(webhookSecret)
+	}
 
 	svc := payments.NewService(db, pub, sc)
+	// Ensure local repo schema
+	if err := payments.NewRepository(db).EnsureSchema(context.Background()); err != nil {
+		log.Printf("payments.EnsureSchema: %v", err)
+	}
 	handler := payments.NewHTTPHandler(svc)
 
 	r := chi.NewRouter()
@@ -54,6 +74,13 @@ func main() {
 			log.Fatalf("ListenAndServe: %v", err)
 		}
 	}()
+
+	// Register NATS listeners
+	if sub != nil {
+		if err := payments.RegisterNATSListeners(context.Background(), sub, payments.NewRepository(db)); err != nil {
+			log.Printf("register listeners: %v", err)
+		}
+	}
 
 	// graceful shutdown
 	quit := make(chan os.Signal, 1)

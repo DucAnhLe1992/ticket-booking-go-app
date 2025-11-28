@@ -20,5 +20,11 @@ func NewNoopPublisher() Publisher { return noop{} }
 type noop struct{}
 
 func (n noop) Publish(ctx context.Context, subject string, data []byte) error { return nil }
-func (n noop) Close() error                                                  { return nil }
-func (n noop) Subscribe(subject string, handler func(msg []byte)) error     { return nil }
+func (n noop) Close() error                                                   { return nil }
+func (n noop) Subscribe(subject string, handler func(msg []byte)) error       { return nil }
+
+// Client is a combined Publisher+Subscriber, useful when a service both publishes and consumes.
+type Client interface {
+	Publisher
+	Subscriber
+}
