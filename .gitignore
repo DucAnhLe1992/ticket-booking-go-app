@@ -1,2 +1,21 @@
+# Binaries
+/bin/
+/build/
+
+# Go
+*.test
+vendor/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Node / TS artifacts (if present)
 node_modules/
-.env
+dist/
+coverage/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
