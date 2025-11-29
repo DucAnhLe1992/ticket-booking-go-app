@@ -1,6 +1,31 @@
-# Ticket Booking Microservices (Go)
+# Ticket Booking Platform - Full Stack Monorepo
 
-A distributed ticket booking system built with Go, ported from Node.js/TypeScript. This project demonstrates event-driven microservices architecture using NATS for pub/sub messaging, PostgreSQL for persistence, and Redis for task queuing.
+A complete ticket booking system with Go microservices backend and Next.js frontend. This monorepo demonstrates event-driven architecture using NATS for pub/sub messaging, PostgreSQL for persistence, Redis for task queuing, and a modern React-based UI.
+
+## 📚 Documentation
+
+- Development workflow: see `docs/DEVELOPMENT.md`
+- Frontend overview: see `frontend/README.md`
+- Frontend structure reference: see `frontend/PROJECT_STRUCTURE.md`
+
+## 📁 Monorepo Structure
+
+```
+ticket-booking-go-app/
+├── cmd/                          # Go service entry points
+├── internal/                     # Shared Go packages
+├── migrations/                   # Database migrations
+├── infra/k8s/                   # Kubernetes manifests
+├── frontend/                     # Next.js application
+│   ├── src/
+│   │   ├── app/                 # Pages & API routes
+│   │   ├── components/          # React components
+│   │   └── lib/                 # Utilities & types
+│   └── package.json
+├── docker-compose.yaml           # Local infrastructure
+├── skaffold.yaml                 # Kubernetes development
+└── Makefile                      # Build & run commands
+```
 
 ## 🏗️ Architecture
 
@@ -35,7 +60,7 @@ A distributed ticket booking system built with Go, ported from Node.js/TypeScrip
 
 ## 🚀 Quick Start
 
-### Option 1: Local Development with Docker Compose
+### Full Stack Development
 
 1. **Start infrastructure services**:
 ```bash
@@ -43,22 +68,12 @@ make dev-infra
 # Starts Postgres, NATS, and Redis in Docker
 ```
 
-2. **Set environment variables**:
+2. **Run database migrations**:
 ```bash
-export DATABASE_URL="postgres://postgres:password@localhost:5432/tickets?sslmode=disable"
-export JWT_SECRET="your-secret-key"
-export NATS_URL="nats://localhost:4222"
-export REDIS_HOST="localhost:6379"
-export STRIPE_KEY="sk_test_your_key"
-export STRIPE_WEBHOOK_SECRET="whsec_your_secret"
+make migrate-up
 ```
 
-3. **Run database migrations**:
-```bash
-make migrate-up DATABASE_URL="postgres://postgres:password@localhost:5432/tickets?sslmode=disable"
-```
-
-4. **Start services** (in separate terminals):
+3. **Start backend services** (in separate terminals):
 ```bash
 # Terminal 1 - Auth Service
 make dev-auth
@@ -74,6 +89,24 @@ make dev-payments
 
 # Terminal 5 - Expiration Worker
 make dev-expiration
+```
+
+4. **Start frontend** (in a new terminal):
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+5. **Access the application**:
+   - Frontend: http://localhost:3000
+   - Backend services: http://localhost:8080
+
+### Using the Interactive Dev Script
+
+```bash
+./dev.sh
+# Menu-driven interface for starting services
 ```
 
 ### Option 2: Kubernetes with Skaffold
@@ -303,6 +336,77 @@ For Kubernetes development:
 ✅ **Type Safety**: Static typing catches errors at compile time
 ✅ **Single Binary**: Easy deployment, no runtime dependencies
 ✅ **Standard Library**: Comprehensive stdlib reduces dependencies
+
+## 🎨 Frontend Application
+
+### Overview
+
+The frontend is a modern Next.js 14 application with:
+- **Framework**: Next.js with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **UI Components**: shadcn/ui (Radix UI)
+- **State Management**: Zustand + TanStack Query
+- **Forms**: React Hook Form + Zod
+- **Payments**: Stripe Elements
+
+### Getting Started
+
+```bash
+# Navigate to frontend
+cd frontend
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.local.example .env.local
+# Edit .env.local with your configuration
+
+# Start development server
+npm run dev
+```
+
+Visit: **http://localhost:3000**
+
+### Frontend Routes
+
+**Public Pages:**
+- `/` - Home page with features
+- `/tickets` - Browse all tickets
+- `/tickets/[id]` - Ticket details & purchase
+- `/signin` - User sign in
+- `/signup` - User registration
+
+**Protected Pages:**
+- `/orders` - View all orders
+- `/orders/[id]` - Order details
+- `/orders/[id]/payment` - Complete payment
+
+### BFF API Pattern
+
+The frontend includes Backend-for-Frontend (BFF) API routes that proxy to Go services:
+
+```
+/api/auth/*          → Auth service
+/api/tickets/*       → Tickets service
+/api/orders/*        → Orders service
+/api/payments/*      → Payments service
+```
+
+**Benefits:**
+- Simplifies authentication (JWT cookies)
+- Reduces CORS complexity
+- Aggregates backend calls
+- Provides consistent API
+
+### Frontend Documentation
+
+See `frontend/` directory:
+- `README.md` - Project overview
+- `SETUP_COMPLETE.md` - Complete setup guide
+- `INTEGRATION_GUIDE.md` - Backend integration
+- `PROJECT_STRUCTURE.md` - Architecture details
 
 ## ⚠️ Considerations
 

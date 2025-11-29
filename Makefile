@@ -52,6 +52,30 @@ dev-payments:
 dev-expiration:
 	go run ./cmd/expiration
 
+# Frontend development
+frontend-install:
+	cd frontend && npm install
+
+frontend-dev:
+	cd frontend && npm run dev
+
+frontend-build:
+	cd frontend && npm run build
+
+frontend-start:
+	cd frontend && npm start
+
+# Full stack development
+dev-all: dev-infra
+	@echo "Starting all services..."
+	@echo "Run these in separate terminals:"
+	@echo "  make dev-auth"
+	@echo "  make dev-tickets"
+	@echo "  make dev-orders"
+	@echo "  make dev-payments"
+	@echo "  make dev-expiration"
+	@echo "  make frontend-dev"
+
 # Database migrations
 migrate-up:
 	@for file in migrations/*.sql; do \
